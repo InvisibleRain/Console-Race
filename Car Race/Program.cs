@@ -25,6 +25,9 @@ namespace Console_Races
             Console.OutputEncoding = System.Text.Encoding.UTF8;
             ConsoleFont.ChangeFont("Lucida Console", 16, 16);
 
+            //Hide cursor
+            Console.CursorVisible = false;
+
             char[,] car = new char[4, 3] {{'\0'          , Globals.block, '\0'          },
                                           { Globals.block, Globals.block, Globals.block },
                                           { '\0'         , Globals.block, '\0'          },
@@ -314,7 +317,6 @@ namespace Console_Races
             }
             Console.SetCursorPosition(12, 1);
             Console.Write($"Best: {bestScore}");
-            Console.SetCursorPosition(0, 0);
         }
 
         static void WriteBestToDisk(int best)
@@ -360,7 +362,6 @@ namespace Console_Races
             Console.SetCursorPosition(7, 10);
             Console.WriteLine("Game Over!");
             Console.Write("Press any key to restart");
-            Console.SetCursorPosition(0, 0);
             WriteBestToDisk(bestScore);
             Thread.Sleep(300);
             ClearKeyBuffer();
