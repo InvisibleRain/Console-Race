@@ -175,9 +175,9 @@ namespace Console_Races
             string docPath = Directory.GetCurrentDirectory();
 
             //If file exist, read from it, else best score = 0
-            if (File.Exists(Path.Combine(docPath, "Best_Score.txt")))
+            if (File.Exists(Path.Combine(docPath, "Best_Score")))
             {
-                best = Convert.ToInt32(File.ReadAllText(Path.Combine(docPath, "Best_Score.txt"))); 
+                best = Convert.ToInt32(File.ReadAllText(Path.Combine(docPath, "Best_Score"))); 
             }
             else
             {
@@ -201,7 +201,7 @@ namespace Console_Races
         static void WriteBestToDisk(int best)
         {
             string docPath = Directory.GetCurrentDirectory();
-            using (StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, "Best_Score.txt")))
+            using (StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, "Best_Score")))
             {
                 outputFile.WriteLine(best);
             }
