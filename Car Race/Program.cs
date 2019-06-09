@@ -15,6 +15,124 @@ namespace Console_Races
 
     public class Game
     {
+        static void Main(string[] args)
+        {
+            //Set width of window at half of normal to compensate font width
+            Console.SetWindowSize(Console.WindowWidth / 2, Console.WindowHeight); 
+            Console.SetBufferSize(Console.BufferWidth / 2, Console.BufferHeight);
+
+            //Set square font
+            Console.OutputEncoding = System.Text.Encoding.UTF8;
+            ConsoleFont.ChangeFont("Lucida Console", 16, 16);
+
+            char[,] car = new char[4, 3] {{'\0'          , Globals.block, '\0'          },
+                                          { Globals.block, Globals.block, Globals.block },
+                                          { '\0'         , Globals.block, '\0'          },
+                                          { Globals.block, '\0'         , Globals.block }};
+
+            char[,] enemyCar = car;
+
+            //Sets screen size
+            char[,] screen = new char[Globals.screenHeight, Globals.screenWidth];
+
+            //Create walls
+            char[,] walls = new char[20, 10];
+
+        start: //Used when player die
+
+            score = 0;
+
+            //Sets start position for left upper corner of car
+            int carX = 2;
+            int carY = 16;
+
+            //Sets speed in blocks per second (It works a bit not correctly because time of frame depend not only from latency between frames, but also from time of frame)
+            int speed = 30;
+
+            //Set enemy car's position
+            int enemyX = 0;
+            int enemyY = 0;
+
+            enemyX = GetRandomPosition();
+
+            //Intro
+            IntroScript(walls, screen, car, carX, carY);
+
+            while (true)
+            {
+                //Main frame rendering calls
+                walls = GenerateWalls();
+                PutOnScreen(screen, walls, 0, 4); //Watch Globals class for explaining
+                PutOnScreen(screen, car, carX, carY + 4); //Watch Globals class for explaining
+                PutOnScreen(screen, enemyCar, enemyX, enemyY);
+                DrawScreen(screen);
+
+                //Score shows separately from "screen" array
+                score++;
+                ShowScore(score);
+                ShowBest(score);
+
+                //If hit enemy, ends game
+                if (IsHitted(carX, carY, enemyX, enemyY) == true)
+                {
+                    break;
+                }
+
+                //Gives player control
+                if (Console.KeyAvailable)
+                {
+                    switch (Console.ReadKey(true).Key)
+                    {
+                        case ConsoleKey.LeftArrow:
+                            if (carX > 3)
+                            {
+                                carX -= 3;
+                                ClearArray(screen);
+                                PutOnScreen(screen, car, carX, carY + 4);
+                                PutOnScreen(screen, enemyCar, enemyX, enemyY);
+                                PutOnScreen(screen, walls, 0, 4);
+                                Thread.Sleep(10); //Removes flickering
+                                DrawScreen(screen);
+                                ShowScore(score);
+                            }
+                            break;
+
+                        case ConsoleKey.RightArrow:
+                            if (carX <= 3)
+                            {
+                                carX += 3;
+                                ClearArray(screen);
+                                PutOnScreen(screen, car, carX, carY + 4);
+                                PutOnScreen(screen, enemyCar, enemyX, enemyY);
+                                PutOnScreen(screen, walls, 0, 4);
+                                Thread.Sleep(10); //Removes flickering
+                                DrawScreen(screen);
+                                ShowScore(score);
+                            }
+                            break;
+
+                        default:
+                            break;
+                    }
+                }
+
+                //If enemy car reaches the bottom, spawn new
+                enemyY++;
+                if (enemyY == screen.GetLength(0) - 1 - 4)
+                {
+                    enemyY = 0;
+                    enemyX = GetRandomPosition();
+                }
+
+                ClearArray(screen);
+                Thread.Sleep(1000 / speed);
+            }
+
+            //If player die
+            GameOverScipt(screen);
+            goto start;
+        }
+
         static void DrawScreen(char[,] screen)
         {
             //I just write in string and output it like it was realy console buffer. Fortunately it works.
@@ -166,7 +284,7 @@ namespace Console_Races
         static void ShowScore(int score)
         {
             Console.SetCursorPosition(12, 0);
-            Console.WriteLine($"Scrore: {score}");
+            Console.WriteLine($"Score: {score}");
         }
 
         public static int ReadBest()
@@ -195,7 +313,8 @@ namespace Console_Races
                 bestScore = score;
             }
             Console.SetCursorPosition(12, 1);
-            Console.WriteLine($"Best: {bestScore}");
+            Console.Write($"Best: {bestScore}");
+            Console.SetCursorPosition(0, 0);
         }
 
         static void WriteBestToDisk(int best)
@@ -221,6 +340,7 @@ namespace Console_Races
                 ShowScore(score);
                 ShowBest(bestScore);
                 Thread.Sleep(1000);
+                ClearKeyBuffer();
                 Console.Clear();
             }
             PutOnScreen(screen, walls, 0, 4); //Watch Globals class for explaining
@@ -231,6 +351,7 @@ namespace Console_Races
             ShowScore(score);
             ShowBest(bestScore);
             Thread.Sleep(1000);
+            ClearKeyBuffer();
             Console.Clear();
         }
 
@@ -238,124 +359,14 @@ namespace Console_Races
         {
             Console.SetCursorPosition(7, 10);
             Console.WriteLine("Game Over!");
-            Console.WriteLine("Press any key to restart");
+            Console.Write("Press any key to restart");
+            Console.SetCursorPosition(0, 0);
             WriteBestToDisk(bestScore);
             Thread.Sleep(300);
             ClearKeyBuffer();
             Console.ReadKey();
             ClearArray(screen);
             Console.Clear();
-        }
-
-        static void Main(string[] args)
-        {
-            Console.OutputEncoding = System.Text.Encoding.UTF8;
-            char[,] car = new char[4, 3] {{ '\0', Globals.block, '\0'                   },
-                                         { Globals.block, Globals.block, Globals.block },
-                                         { '\0', Globals.block, '\0'                   },
-                                         { Globals.block, '\0', Globals.block          }};
-
-            char[,] enemyCar = car;
-
-            //Sets screen size
-            char[,] screen = new char[Globals.screenHeight, Globals.screenWidth];
-
-            //Create walls
-            char[,] walls = new char[20, 10];
-
-        start: //Used when player die
-
-            score = 0;
-
-            //Sets start position for left upper corner of car
-            int carX = 2;
-            int carY = 16;
-
-            //Sets speed in blocks per second (It works a bit not correctly because time of frame depend not only from latency between frames, but also from time of frame)
-            int speed = 30;
-
-            //Set enemy car's position
-            int enemyX = 0;
-            int enemyY = 0;
-
-            enemyX = GetRandomPosition();
-
-            //Intro
-            IntroScript(walls, screen, car, carX, carY);
-
-            while (true)
-            {
-                //Main frame rendering calls
-                walls = GenerateWalls();
-                PutOnScreen(screen, walls, 0, 4); //Watch Globals class for explaining
-                PutOnScreen(screen, car, carX, carY + 4); //Watch Globals class for explaining
-                PutOnScreen(screen, enemyCar, enemyX, enemyY);
-                DrawScreen(screen);
-
-                //Score shows separately from "screen" array
-                score++;
-                ShowScore(score);
-                ShowBest(score);
-
-                //If hit enemy, ends game
-                if (IsHitted(carX, carY, enemyX, enemyY) == true)
-                {
-                    break;
-                }
-
-                //Gives player control
-                if (Console.KeyAvailable)
-                {
-                    switch (Console.ReadKey(true).Key)
-                    {
-                        case ConsoleKey.LeftArrow:
-                            if (carX > 3)
-                            {
-                                carX -= 3;
-                                ClearArray(screen);
-                                PutOnScreen(screen, car, carX, carY + 4);
-                                PutOnScreen(screen, enemyCar, enemyX, enemyY);
-                                PutOnScreen(screen, walls, 0, 4);
-                                Thread.Sleep(10); //Removes flickering
-                                DrawScreen(screen);
-                                ShowScore(score);
-                            }
-                            break;
-
-                        case ConsoleKey.RightArrow:
-                            if (carX <= 3)
-                            {
-                                carX += 3;
-                                ClearArray(screen);
-                                PutOnScreen(screen, car, carX, carY + 4);
-                                PutOnScreen(screen, enemyCar, enemyX, enemyY);
-                                PutOnScreen(screen, walls, 0, 4);
-                                Thread.Sleep(10); //Removes flickering
-                                DrawScreen(screen);
-                                ShowScore(score);
-                            }
-                            break;
-
-                        default:
-                            break;
-                    }
-                }
-
-                //If enemy car reaches the bottom, spawn new
-                enemyY++;
-                if (enemyY == screen.GetLength(0) - 1 - 4)
-                {
-                    enemyY = 0;
-                    enemyX = GetRandomPosition();
-                }
-
-                ClearArray(screen);
-                Thread.Sleep(1000 / speed);
-            }
-
-            //If player die
-            GameOverScipt(screen);
-            goto start;
         }
     }
 }
