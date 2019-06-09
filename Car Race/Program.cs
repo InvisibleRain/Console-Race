@@ -17,8 +17,7 @@ namespace Console_Races
     {
         static void DrawScreen(char[,] screen)
         {
-            //I so dumb to write in really console buffer, so i just write in string
-            //I will refract it later (maybe)
+            //I just write in string and output it like it was realy console buffer. Fortunately it works.
             Console.SetCursorPosition(0, 0);
 
             string consoleBuffer = "";
@@ -34,6 +33,7 @@ namespace Console_Races
             Console.Write(consoleBuffer);
         }
 
+        //Adds one smaller array to bigger "screen" array. "creen" array later will be outputed with DrawScreen
         static void PutOnScreen(char[,] screen, char[,] array, int posX, int posY)
         {
             for (int col = posY; col < array.GetLength(0) + posY; col++)
@@ -79,22 +79,21 @@ namespace Console_Races
 
         static char[,] GenerateWalls()
         {
-            //Initialize one one-dimensional wall that will be transforms to final two-dimensional array later
+            //Initialize one one-dimensional wall that will be transforms to final two-dimensional array later (kostil)
             char[] oneWall = new char[20] { Globals.block, Globals.block, Globals.block, Globals.block, ' ', Globals.block, Globals.block, Globals.block, Globals.block, ' ', Globals.block, Globals.block, Globals.block, Globals.block, ' ', Globals.block, Globals.block, Globals.block, Globals.block, ' ' };
             char[,] result = new char[20, 10];
 
+            //Sets shiftig level for walls. It not internal variable because we need to store shifting level in RAM continiously, othrewise it nullifies
             Game.count++;
             if (Game.count > 5)
             {
                 Game.count = 1;
             }
 
+            //Shifts array to right and give 1st element value of previous last
             for (int i = 1; i <= Game.count; i++)
             {
-                //Record last symbol of oneWall in temp
                 char temp = oneWall[oneWall.Length - 1];
-
-                //Move array by one element right and give first element value of temp
                 oneWall = ArrayShift(oneWall);
                 oneWall[0] = temp;
             }
@@ -112,6 +111,7 @@ namespace Console_Races
             return result;
         }
 
+        //Random positon for enenemy's car
         static int GetRandomPosition()
         {
             Random rand = new Random();
@@ -154,6 +154,7 @@ namespace Console_Races
             return hitted;
         }
 
+        //Fix bug when key readed in buffer even if Thread.Sleep() already works
         static void ClearKeyBuffer()
         {
             while (Console.KeyAvailable)
@@ -187,7 +188,7 @@ namespace Console_Races
 
         public static int bestScore = ReadBest(); //For ShowBest
 
-        static void ShowBest(int score) //Доделать
+        static void ShowBest(int score)
         {
             if (score > bestScore)
             {
@@ -209,10 +210,7 @@ namespace Console_Races
         static void IntroScript(char[,] walls, char[,] screen, char[,] car, int carX, int carY)
         {
             walls = GenerateWalls();
-            //PutOnScreen(screen, walls, 0, 4); //Watch Globals class for explaining
-            //PutOnScreen(screen, car, carX, carY + 4);
-            //DrawScreen(screen);
-            //Console.Clear();
+        
             for (int i = 3; i >= 1; i--)
             {
                 PutOnScreen(screen, walls, 0, 4); //Watch Globals class for explaining
@@ -236,6 +234,19 @@ namespace Console_Races
             Console.Clear();
         }
 
+        static void GameOverScipt(char[,] screen)
+        {
+            Console.SetCursorPosition(7, 10);
+            Console.WriteLine("Game Over!");
+            Console.WriteLine("Press any key to restart");
+            WriteBestToDisk(bestScore);
+            Thread.Sleep(300);
+            ClearKeyBuffer();
+            Console.ReadKey();
+            ClearArray(screen);
+            Console.Clear();
+        }
+
         static void Main(string[] args)
         {
             Console.OutputEncoding = System.Text.Encoding.UTF8;
@@ -243,11 +254,6 @@ namespace Console_Races
                                          { Globals.block, Globals.block, Globals.block },
                                          { '\0', Globals.block, '\0'                   },
                                          { Globals.block, '\0', Globals.block          }};
-
-            //char[,] enemyCar = new char[4, 3] {{ Globals.block, '\0', Globals.block          },
-            //{ '\0', Globals.block, '\0'                   },
-            //{ Globals.block, Globals.block, Globals.block },
-            //{ '\0', Globals.block, '\0'                   }};
 
             char[,] enemyCar = car;
 
@@ -257,8 +263,6 @@ namespace Console_Races
             //Create walls
             char[,] walls = new char[20, 10];
 
-            int record;
-
         start: //Used when player die
 
             score = 0;
@@ -267,9 +271,8 @@ namespace Console_Races
             int carX = 2;
             int carY = 16;
 
-            //Sets speed in blocks per second (or frames per second)
+            //Sets speed in blocks per second (It works a bit not correctly because time of frame depend not only from latency between frames, but also from time of frame)
             int speed = 30;
-
 
             //Set enemy car's position
             int enemyX = 0;
@@ -282,21 +285,25 @@ namespace Console_Races
 
             while (true)
             {
+                //Main frame rendering calls
                 walls = GenerateWalls();
                 PutOnScreen(screen, walls, 0, 4); //Watch Globals class for explaining
-                PutOnScreen(screen, car, carX, carY + 4);
+                PutOnScreen(screen, car, carX, carY + 4); //Watch Globals class for explaining
                 PutOnScreen(screen, enemyCar, enemyX, enemyY);
                 DrawScreen(screen);
 
+                //Score shows separately from "screen" array
                 score++;
                 ShowScore(score);
                 ShowBest(score);
 
+                //If hit enemy, ends game
                 if (IsHitted(carX, carY, enemyX, enemyY) == true)
                 {
                     break;
                 }
 
+                //Gives player control
                 if (Console.KeyAvailable)
                 {
                     switch (Console.ReadKey(true).Key)
@@ -334,18 +341,8 @@ namespace Console_Races
                     }
                 }
 
-                ////Speed up when spacebar is pressed
-                //if (Console.KeyAvailable && Console.ReadKey(true).Key == ConsoleKey.Spacebar)
-                //{
-                //    speed = 60;
-                //}
-                //else
-                //{
-                //    speed = 30;
-                //}
-
-                enemyY++;
                 //If enemy car reaches the bottom, spawn new
+                enemyY++;
                 if (enemyY == screen.GetLength(0) - 1 - 4)
                 {
                     enemyY = 0;
@@ -357,15 +354,7 @@ namespace Console_Races
             }
 
             //If player die
-            Console.SetCursorPosition(7, 10);
-            Console.WriteLine("Game Over!");
-            Console.WriteLine("Press any key to restart");
-            WriteBestToDisk(bestScore);
-            Thread.Sleep(300);
-            ClearKeyBuffer();
-            Console.ReadKey();
-            ClearArray(screen);
-            Console.Clear();
+            GameOverScipt(screen);
             goto start;
         }
     }
